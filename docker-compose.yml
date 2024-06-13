@@ -1,23 +1,27 @@
-version: '3'
 services:
-    nginxwaf:
-        build: .
-        ports:
-            - "80:80"
-            - "443:443"
-        restart: always
-        volumes:
-                - ./config/nginx.conf:/usr/local/nginx/conf/nginx.conf
-                - ./config/modsecurity.conf:/usr/local/nginx/conf/modsecurity.conf
-                - ./config/modsec_includes.conf:/usr/local/nginx/conf/modsec_includes.conf
-                - ./config/crs-setup.conf:/usr/local/nginx/conf/rules/crs-setup.conf
-                - ./fail2ban/jail.conf:/etc/fail2ban/jail.conf
-                - ./fail2ban/jail.conf:/etc/fail2ban/jail.local
-                - ./fail2ban/filter.d/:/etc/fail2ban/filter.d/
-                - ./logs/access.log:/usr/local/nginx/logs/access.log
-                - ./logs/error.log:/usr/local/nginx/logs/error.log
-                - ./logs/:/var/log/
-
-        cap_add:
-                - NET_ADMIN
-                - NET_RAW
+  # Nginx Reverse Proxy and WAF
+  nginx:
+    image: nginx
+    container_name: openpanel_nginx
+    restart: always
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+        - /etc/openpanel/nginx/nginx.conf:/etc/nginx/nginx.conf
+        - /etc/openpanel/nginx/vhosts/default.conf:/etc/nginx/sites-available/default
+        - /etc/openpanel/nginx/vhosts/default.conf:/etc/nginx/sites-enabled/default
+        - /etc/openpanel/nginx/vhosts/openpanel_proxy.conf:/etc/openpanel/nginx/vhosts/openpanel_proxy.conf
+        - /etc/nginx/sites-available/:/etc/nginx/sites-available/
+        - /etc/nginx/sites-enabled/:/etc/nginx/sites-enabled/
+        - /etc/openpanel/nginx/error_pages/snippets/:/etc/nginx/snippets/
+        - /etc/openpanel/nginx/error_pages/:/srv/http/default/
+        - /var/log/nginx/stats/:/var/log/nginx/stats/
+        - /var/log/nginx/domlogs/:/var/log/nginx/domlogs/
+        - /etc/openpanel/openpanel/core/users/:/etc/openpanel/openpanel/core/users/
+    mem_limit: 1g
+    cpus: 1
+    oom_kill_disable: true
