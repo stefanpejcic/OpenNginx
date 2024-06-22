@@ -21,6 +21,7 @@ services:
         - /etc/openpanel/nginx/error_pages/:/srv/http/default/
         - /var/log/nginx/stats/:/var/log/nginx/stats/
         - /var/log/nginx/domlogs/:/var/log/nginx/domlogs/
+        - /etc/letsencrypt/:/etc/letsencrypt/
         - /etc/openpanel/openpanel/core/users/:/etc/openpanel/openpanel/core/users/
     mem_limit: 1g
     cpus: 1
