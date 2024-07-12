@@ -1,12 +1,8 @@
+version: '3'
+
 services:
-  # Nginx Reverse Proxy and WAF
   nginx:
-    image: nginx
-    container_name: openpanel_nginx
-    restart: always
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
+    image: openpanel/opennginx
     ports:
       - "80:80"
       - "443:443"
@@ -23,6 +19,20 @@ services:
         - /var/log/nginx/domlogs/:/var/log/nginx/domlogs/
         - /etc/letsencrypt/:/etc/letsencrypt/
         - /etc/openpanel/openpanel/core/users/:/etc/openpanel/openpanel/core/users/
-    mem_limit: 1g
-    cpus: 1
-    oom_kill_disable: true
+    depends_on:
+      - certbot
+    network_mode: host
+
+  modsecurity:
+    image: owasp/modsecurity-crs:nginx
+    volumes:
+      - /etc/openpanel/nginx/modsecurity:/etc/nginx/modsecurity
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - /var/log/letsencrypt:/var/log/letsencrypt
+      - /etc/openpanel/nginx:/etc/nginx
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
