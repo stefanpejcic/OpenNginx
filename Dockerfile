@@ -1,6 +1,6 @@
 FROM alpine:latest
-LABEL maintainer="stefan@pejcic.rs"
-LABEL author="Stefan Pejcic"
+Label manteiner="Ernesto Rode aka b-04 <ernesto@erconsultor.com>"
+# packages needed to compile / paquetes necesarios para compilar
 
 RUN apk update && apk upgrade
 RUN apk add --update wget \
@@ -16,13 +16,13 @@ RUN apk add --update wget \
  	pcre-dev \
  	libtool \
  	libxml2-dev \
- 	libressl-dev \ 
 	yajl-dev \
  	pkgconf  \
 	zlib-dev \
 	linux-headers 
 	
-# compile latest modsec
+# I download and compile modsecurity from github official repository / Bajo y compilo modsecurity de github repositorio oficial
+
 RUN cd /tmp && git clone https://github.com/SpiderLabs/ModSecurity 
 RUN cd /tmp/ModSecurity && git submodule init && git submodule update
 RUN cd /tmp/ModSecurity && ./build.sh && \
@@ -30,7 +30,8 @@ RUN cd /tmp/ModSecurity && ./build.sh && \
 	make && \
 	make install
 
-# latest nginx from  https://nginx.org/en/CHANGES
+# I download and compile nginx from the official website / I download and compile nginx from the official website
+
 RUN cd /tmp && git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git \
     && wget http://nginx.org/download/nginx-1.27.0.tar.gz \
     && tar zxvf nginx-1.27.0.tar.gz
@@ -39,20 +40,15 @@ RUN cd /tmp/nginx-1.27.0/ && ./configure  --user=root --group=root --with-debug 
     && make \
     && make install 
 
-# latest owasp core ruleset
-RUN git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git /usr/src/owasp-modsecurity-crs
+# i download the updated owasp rules / descargo las reglas actualizadas de owasp
+
+RUN git clone https://github.com/coreruleset/coreruleset.git /usr/src/owasp-modsecurity-crs
 RUN cp -R /usr/src/owasp-modsecurity-crs/rules/ /usr/local/nginx/conf/ 
 RUN mv /usr/local/nginx/conf/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example  /usr/local/nginx/conf/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf 
 RUN mv /usr/local/nginx/conf/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example  /usr/local/nginx/conf/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf 
 
-# fail2ban
-# todo: from fail2ban
-RUN apk add fail2ban
-RUN rm /etc/fail2ban/jail.d/alpine-ssh.conf
+# start nginx and fail2ban. expose 80 port for nginx / inicio nginx y fail2ban. expongo el puerto 80 para nginx
 
-# start nginx and fail2ban. 
 CMD ./usr/local/nginx/sbin/nginx -g 'daemon off;'
-CMD [ "fail2ban-server", "-f", "-x", "-v", "start" ]
 
-# expose 80 and 443 port for nginx
 EXPOSE 80 443
