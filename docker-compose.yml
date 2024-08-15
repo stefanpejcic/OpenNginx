@@ -1,11 +1,8 @@
-version: '3'
-
 services:
   nginx:
-    image: openpanel/opennginx
-    ports:
-      - "80:80"
-      - "443:443"
+    image: nginx:latest
+    container_name: main_nginx
+    network_mode: "host"
     volumes:
         - /etc/openpanel/nginx/nginx.conf:/etc/nginx/nginx.conf
         - /etc/openpanel/nginx/vhosts/default.conf:/etc/nginx/sites-available/default
@@ -15,24 +12,23 @@ services:
         - /etc/nginx/sites-enabled/:/etc/nginx/sites-enabled/
         - /etc/openpanel/nginx/error_pages/snippets/:/etc/nginx/snippets/
         - /etc/openpanel/nginx/error_pages/:/srv/http/default/
-        - /var/log/nginx/stats/:/var/log/nginx/stats/
-        - /var/log/nginx/domlogs/:/var/log/nginx/domlogs/
+        - /var/log/nginx/:/var/log/nginx/
         - /etc/letsencrypt/:/etc/letsencrypt/
         - /etc/openpanel/openpanel/core/users/:/etc/openpanel/openpanel/core/users/
-    depends_on:
-      - certbot
-    network_mode: host
-
-  modsecurity:
-    image: owasp/modsecurity-crs:nginx
-    volumes:
-      - /etc/openpanel/nginx/modsecurity:/etc/nginx/modsecurity
+        - /etc/hosts:/etc/hosts
+    restart: unless-stopped
 
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:latest
+    container_name: certbot
+    network_mode: "host"
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/lib/letsencrypt:/var/lib/letsencrypt
-      - /var/log/letsencrypt:/var/log/letsencrypt
-      - /etc/openpanel/nginx:/etc/nginx
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      - /etc/letsencrypt:/etc/letsencrypt                    # Let's Encrypt certificates
+      - /var/lib/letsencrypt:/var/lib/letsencrypt            # Working directory for Certbot
+      - /etc/nginx/sites-available:/etc/nginx/sites-available # Access to Nginx config for authentication challenges
+      - /etc/nginx/sites-enabled:/etc/nginx/sites-enabled    # Enabled sites for reloading after cert issuance
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew; nginx -s reload; done'
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1
+    oom_kill_disable: true
